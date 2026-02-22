@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Tracker | Advanced Stats</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --physics: #38bdf8;
+            --chemistry: #fb923c;
+            --maths: #c084fc;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #22c55e;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1000px; width: 100%; }
+
+        header { text-align: center; margin-bottom: 30px; }
+        header h1 { font-size: 2.2rem; background: linear-gradient(to right, var(--physics), var(--maths)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        header p { color: var(--text-dim); font-size: 0.9rem; margin-top: 0; }
+
+        /* Stats Section */
+        .section-label { color: var(--text-dim); font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: block; text-align: center;}
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            text-align: center;
+        }
+
+        .stat-card h3 { margin: 0; font-size: 0.7rem; text-transform: uppercase; color: var(--text-dim); }
+        .stat-card .time { font-size: 1.5rem; font-weight: 700; margin-top: 8px; font-variant-numeric: tabular-nums; }
+        .stat-card.highlight { border-color: #475569; background: #1a2233; }
+
+        /* Timer Cards */
+        .timer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .subject-card {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            border: 1px solid #334155;
+            transition: all 0.3s ease;
+        }
+
+        .subject-card.active { border-color: var(--color); box-shadow: 0 0 20px rgba(var(--shadow-rgb), 0.15); transform: translateY(-3px); }
+        
+        .physics { --color: var(--physics); --shadow-rgb: 56, 189, 248; }
+        .chemistry { --color: var(--chemistry); --shadow-rgb: 251, 146, 60; }
+        .maths { --color: var(--maths); --shadow-rgb: 192, 132, 252; }
+
+        .subject-card h2 { color: var(--color); margin-top: 0; font-size: 1.4rem; }
+        .display { font-size: 2.5rem; font-family: monospace; margin: 15px 0; font-weight: bold; }
+        .controls { display: flex; gap: 8px; justify-content: center; }
+
+        button { padding: 10px 20px; border: none; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 0.85rem; }
+        .start-btn { background-color: var(--success); color: #052e16; }
+        .stop-btn { background-color: var(--danger); color: #450a0a; }
+        button:disabled { background-color: #334155; color: #64748b; cursor: not-allowed; }
+        
+        .reset-data { margin-top: 50px; background: transparent; color: #475569; font-size: 0.7rem; text-decoration: underline; border: none; cursor: pointer;}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Study Hub</h1>
+        <p id="current-date"></p>
+    </header>
+
+    <span class="section-label">Monthly Subject Breakdown</span>
+    <div class="stats-grid">
+        <div class="stat-card highlight">
+            <h3>Physics (Month)</h3>
+            <div class="time" id="m-physics" style="color: var(--physics);">00:00:00</div>
+        </div>
+        <div class="stat-card highlight">
+            <h3>Chemistry (Month)</h3>
+            <div class="time" id="m-chemistry" style="color: var(--chemistry);">00:00:00</div>
+        </div>
+        <div class="stat-card highlight">
+            <h3>Maths (Month)</h3>
+            <div class="time" id="m-maths" style="color: var(--maths);">00:00:00</div>
+        </div>
+    </div>
+
+    <span class="section-label">Session Aggregates</span>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Combined Today</h3>
+            <div class="time" id="daily-total">00:00:00</div>
+        </div>
+        <div class="stat-card">
+            <h3>Total Month</h3>
+            <div class="time" id="monthly-total">00:00:00</div>
+        </div>
+    </div>
+
+    <div class="timer-grid">
+        <div class="subject-card physics" id="card-physics">
+            <h2>Physics</h2>
+            <div class="display" id="physics-display">00:00:00</div>
+            <div class="controls">
+                <button class="start-btn" id="start-physics" onclick="startTimer('physics')">START</button>
+                <button class="stop-btn" onclick="stopTimer('physics')">STOP</button>
+            </div>
+        </div>
+
+        <div class="subject-card chemistry" id="card-chemistry">
+            <h2>Chemistry</h2>
+            <div class="display" id="chemistry-display">00:00:00</div>
+            <div class="controls">
+                <button class="start-btn" id="start-chemistry" onclick="startTimer('chemistry')">START</button>
+                <button class="stop-btn" onclick="stopTimer('chemistry')">STOP</button>
+            </div>
+        </div>
+
+        <div class="subject-card maths" id="card-maths">
+            <h2>Maths</h2>
+            <div class="display" id="maths-display">00:00:00</div>
+            <div class="controls">
+                <button class="start-btn" id="start-maths" onclick="startTimer('maths')">START</button>
+                <button class="stop-btn" onclick="stopTimer('maths')">STOP</button>
+            </div>
+        </div>
+    </div>
+
+    <center><button class="reset-data" onclick="clearData()">Wipe Session History</button></center>
+</div>
+
+<script>
+    let timers = {
+        physics: { seconds: 0, interval: null },
+        chemistry: { seconds: 0, interval: null },
+        maths: { seconds: 0, interval: null }
+    };
+
+    let studyData = JSON.parse(localStorage.getItem('studyLogs')) || {};
+
+    function startTimer(subject) {
+        Object.keys(timers).forEach(s => { if(s !== subject) stopTimer(s); });
+        if (!timers[subject].interval) {
+            document.getElementById(`card-${subject}`).classList.add('active');
+            document.getElementById(`start-${subject}`).disabled = true;
+            timers[subject].interval = setInterval(() => {
+                timers[subject].seconds++;
+                document.getElementById(`${subject}-display`).innerText = formatTime(timers[subject].seconds);
+                calculateTotals();
+            }, 1000);
+        }
+    }
+
+    function stopTimer(subject) {
+        if (timers[subject].interval) {
+            clearInterval(timers[subject].interval);
+            timers[subject].interval = null;
+            document.getElementById(`card-${subject}`).classList.remove('active');
+            document.getElementById(`start-${subject}`).disabled = false;
+            saveToStorage(subject, timers[subject].seconds);
+            timers[subject].seconds = 0;
+            document.getElementById(`${subject}-display`).innerText = "00:00:00";
+            calculateTotals();
+        }
+    }
+
+    function formatTime(totalSeconds) {
+        const hrs = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+        const mins = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+        const secs = (totalSeconds % 60).toString().padStart(2, '0');
+        return `${hrs}:${mins}:${secs}`;
+    }
+
+    function saveToStorage(subject, seconds) {
+        const today = new Date().toISOString().split('T')[0];
+        if (!studyData[today]) studyData[today] = { physics: 0, chemistry: 0, maths: 0 };
+        studyData[today][subject] += seconds;
+        localStorage.setItem('studyLogs', JSON.stringify(studyData));
+    }
+
+    function calculateTotals() {
+        const today = new Date().toISOString().split('T')[0];
+        const currentMonth = today.substring(0, 7);
+
+        let totals = { daily: 0, monthly: 0, pMonth: 0, cMonth: 0, mMonth: 0 };
+
+        // Add historical
+        Object.keys(studyData).forEach(date => {
+            const day = studyData[date];
+            const daySum = day.physics + day.chemistry + day.maths;
+            if (date === today) totals.daily += daySum;
+            if (date.startsWith(currentMonth)) {
+                totals.monthly += daySum;
+                totals.pMonth += day.physics;
+                totals.cMonth += day.chemistry;
+                totals.mMonth += day.maths;
+            }
+        });
+
+        // Add live seconds
+        Object.keys(timers).forEach(s => {
+            totals.daily += timers[s].seconds;
+            totals.monthly += timers[s].seconds;
+            if (s === 'physics') totals.pMonth += timers[s].seconds;
+            if (s === 'chemistry') totals.cMonth += timers[s].seconds;
+            if (s === 'maths') totals.mMonth += timers[s].seconds;
+        });
+
+        document.getElementById('daily-total').innerText = formatTime(totals.daily);
+        document.getElementById('monthly-total').innerText = formatTime(totals.monthly);
+        document.getElementById('m-physics').innerText = formatTime(totals.pMonth);
+        document.getElementById('m-chemistry').innerText = formatTime(totals.cMonth);
+        document.getElementById('m-maths').innerText = formatTime(totals.mMonth);
+        document.getElementById('current-date').innerText = new Date().toDateString();
+    }
+
+    function clearData() {
+        if(confirm("Wipe all history?")) { localStorage.clear(); location.reload(); }
+    }
+
+    calculateTotals();
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+
+<script>
+  // PASTE YOUR FIREBASE CONFIG HERE
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    databaseURL: "YOUR_DATABASE_URL",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "...",
+    messagingSenderId: "...",
+    appId: "..."
+  };
+  
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // Replace your existing saveData function with this:
+  function saveToStorage(subject, seconds) {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Update Firebase instead of LocalStorage
+      const ref = db.ref('studyLogs/' + today + '/' + subject);
+      ref.transaction((currentValue) => {
+          return (currentValue || 0) + seconds;
+      });
+  }
+
+  // Replace your calculateTotals function with this:
+  function calculateTotals() {
+      db.ref('studyLogs').on('value', (snapshot) => {
+          const studyData = snapshot.val() || {};
+          const today = new Date().toISOString().split('T')[0];
+          const currentMonth = today.substring(0, 7);
+
+          let totals = { daily: 0, monthly: 0, pMonth: 0, cMonth: 0, mMonth: 0 };
+
+          Object.keys(studyData).forEach(date => {
+              const day = studyData[date];
+              const p = day.physics || 0;
+              const c = day.chemistry || 0;
+              const m = day.maths || 0;
+              const daySum = p + c + m;
+
+              if (date === today) totals.daily += daySum;
+              if (date.startsWith(currentMonth)) {
+                  totals.monthly += daySum;
+                  totals.pMonth += p;
+                  totals.cMonth += c;
+                  totals.mMonth += m;
+              }
+          });
+
+          // Update the UI
+          document.getElementById('daily-total').innerText = formatTime(totals.daily);
+          document.getElementById('monthly-total').innerText = formatTime(totals.monthly);
+          document.getElementById('m-physics').innerText = formatTime(totals.pMonth);
+          document.getElementById('m-chemistry').innerText = formatTime(totals.cMonth);
+          document.getElementById('m-maths').innerText = formatTime(totals.mMonth);
+      });
+  }
+</script>
+</body>
+</html>
